@@ -18,7 +18,15 @@ def run_game():
 	pygame.init()
 	cactus = Cactus(screen)
 	Cacti.add(cactus)
+	last_milliseconds = pygame.time.get_ticks()
 	while not dead:
+
+		#Track elapsed time	
+		current_milliseconds = pygame.time.get_ticks()
+		elapsed_milliseconds = current_milliseconds - last_milliseconds
+		last_milliseconds = current_milliseconds
+
+		dino.update(speed)
 		update_screen(dino, screen, Cacti)
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -64,10 +72,12 @@ def fall():
 	#print("falling")
 
 def jump(dino, screen, cactus):
-	dino.rect.bottom -= 50
-	t = Timer(1, fall)
-	t.start()
-	
+	if not dino.is_jumping():
+		dino.jump()
+	#dino.rect.bottom -= 50
+	#t = Timer(1, fall)
+	#t.start()
+
 class Dino(Sprite):
 	def __init__(self, screen):
 		super(Dino, self).__init__()
@@ -77,10 +87,28 @@ class Dino(Sprite):
 		
 		self.rect.bottom = 300
 		self.rect.left = 30
-		
+		self.bottom = 300
 
+		self.jump_duration_milliseconds = 500
+		self.jump_height = 100
+		self.jump_curr_duration = 0
+		
 	def blitme(self):
 		self.screen.blit(self.image, self.rect)
+
+	def update(self, delta):
+		if self.jump_curr_duration > 0:
+			self.jump_curr_duration -= delta
+			if self.jump_curr_duration < 0:
+				self.jump_curr_duration = 0
+		duration_percent = 1 - ((self.jump_duration_milliseconds - self.jump_curr_duration) / self.jump_duration_milliseconds)
+		self.rect.bottom = self.bottom - (self.jump_height * duration_percent)
+
+	def jump(self):
+		self.jump_curr_duration = self.jump_duration_milliseconds
+
+	def is_jumping(self):
+		return self.jump_curr_duration > 0
 		
 def check_collisions(Dino, cacti):
 	for cactus in cacti:
