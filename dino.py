@@ -89,7 +89,8 @@ class Dino(Sprite):
 		self.rect.left = 30
 		self.bottom = 300
 
-		self.jump_duration_milliseconds = 500
+		self.jump_duration_milliseconds = 1000
+		self.jump_duration_half_milliseconds = 500
 		self.jump_height = 100
 		self.jump_curr_duration = 0
 		
@@ -97,12 +98,28 @@ class Dino(Sprite):
 		self.screen.blit(self.image, self.rect)
 
 	def update(self, delta):
+		animation_value = 0
 		if self.jump_curr_duration > 0:
 			self.jump_curr_duration -= delta
 			if self.jump_curr_duration < 0:
 				self.jump_curr_duration = 0
-		duration_percent = 1 - ((self.jump_duration_milliseconds - self.jump_curr_duration) / self.jump_duration_milliseconds)
-		self.rect.bottom = self.bottom - (self.jump_height * duration_percent)
+
+		if self.jump_curr_duration > self.jump_duration_half_milliseconds:
+			#Rising
+			normalized_duration = self.jump_curr_duration - self.jump_duration_half_milliseconds
+			duration_percent = 1 - (normalized_duration / self.jump_duration_half_milliseconds)
+			animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
+		elif self.jump_curr_duration > 0:
+			#Falling
+			duration_percent = (self.jump_curr_duration / self.jump_duration_half_milliseconds)
+			animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
+
+		self.rect.bottom = self.bottom - animation_value
+	
+	def __cubicEaseOut(self, animation_delta):
+		#Use the cubic ease out equation to produce an animation value.
+		#delta is expected to be between 0 and 1
+		return (1 - pow(1 - animation_delta, 3))
 
 	def jump(self):
 		self.jump_curr_duration = self.jump_duration_milliseconds
