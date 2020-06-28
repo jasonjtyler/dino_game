@@ -26,7 +26,7 @@ def run_game():
 		elapsed_milliseconds = current_milliseconds - last_milliseconds
 		last_milliseconds = current_milliseconds
 
-		dino.update(speed)
+		dino.update(elapsed_milliseconds)
 		update_screen(dino, screen, Cacti)
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
