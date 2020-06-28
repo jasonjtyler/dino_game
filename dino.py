@@ -40,7 +40,20 @@ def run_game():
 		if determine_cactus():
 			cactus = Cactus(screen)
 			Cacti.add(cactus)
-		
+	
+	game_over_dur = 1500
+	last_milliseconds = pygame.time.get_ticks()
+	while (game_over_dur > 0):
+		#Track elapsed time	
+		current_milliseconds = pygame.time.get_ticks()
+		elapsed_milliseconds = current_milliseconds - last_milliseconds
+		last_milliseconds = current_milliseconds
+
+		dino.update_dead(elapsed_milliseconds)
+		game_over_dur -= elapsed_milliseconds
+
+		update_screen_dead(dino, screen, Cacti)
+	
 	
 	
 def update_screen(dino, screen, cacti):
@@ -50,6 +63,14 @@ def update_screen(dino, screen, cacti):
 	for cactus in cacti:
 		cactus.blitme()
 	move_cactus(Cacti)
+	pygame.display.flip()
+
+def update_screen_dead(dino, screen, cacti):
+	screen.fill((245, 245, 245))
+	pygame.draw.rect(screen,(215,219,108),[0,300,1000,500])
+	dino.blitme()
+	for cactus in cacti:
+		cactus.blitme()
 	pygame.display.flip()
 	
 class Cactus(Sprite): 
@@ -85,7 +106,9 @@ class Dino(Sprite):
 		self.image = pygame.image.load('assets/dino_stand.png')
 		self.walk1 = pygame.image.load('assets/dino_walk1.png')
 		self.walk2 = pygame.image.load('assets/dino_walk2.png')
-		self.walk_cycle = self.image
+		self.dead1 = pygame.image.load('assets/dino_dead1.png')
+		self.dead2 = pygame.image.load('assets/dino_dead2.png')
+		self.curr_sprite = self.image
 		self.rect = self.image.get_rect()
 		
 		self.rect.bottom = 300
@@ -99,14 +122,13 @@ class Dino(Sprite):
 
 		self.walk_cycle_duration_milliseconds = 200
 		self.walk_cycle_curr_duration = 0
+
+		self.is_dead = False
+		self.dead_cycle_duration_milliseconds = 200
+		self.dead_cycle_curr_duration = 0
 		
 	def blitme(self):
-		if self.is_jumping():
-			#Use walk1 as the jump sprite.
-			self.screen.blit(self.walk1, self.rect)
-		else:
-			#Walk cycle.
-			self.screen.blit(self.walk_cycle, self.rect)
+		self.screen.blit(self.curr_sprite, self.rect)
 
 	def update(self, delta):
 
@@ -129,6 +151,7 @@ class Dino(Sprite):
 				animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
 
 			self.rect.bottom = self.bottom - animation_value
+			self.curr_sprite = self.walk1 #Use walk1 as the jump sprite
 
 		else:
 			#No jump
@@ -139,14 +162,24 @@ class Dino(Sprite):
 			if self.walk_cycle_curr_duration > self.walk_cycle_duration_milliseconds:
 				self.walk_cycle_curr_duration -= self.walk_cycle_duration_milliseconds
 			if self.walk_cycle_curr_duration < 100:
-				self.walk_cycle = self.walk1
+				self.curr_sprite = self.walk1
 			else:
-				self.walk_cycle = self.walk2
+				self.curr_sprite = self.walk2
 	
 	def __cubicEaseOut(self, animation_delta):
 		#Use the cubic ease out equation to produce an animation value.
 		#delta is expected to be between 0 and 1
 		return (1 - pow(1 - animation_delta, 3))
+
+	def update_dead(self, delta):
+		#Update the dead cycle sprites
+		self.dead_cycle_curr_duration += delta
+		if self.dead_cycle_curr_duration > self.dead_cycle_duration_milliseconds:
+			self.dead_cycle_curr_duration -= self.dead_cycle_duration_milliseconds
+		if self.dead_cycle_curr_duration < 100:
+			self.curr_sprite = self.dead1
+		else:
+			self.curr_sprite = self.dead2
 
 	def jump(self):
 		self.jump_curr_duration = self.jump_duration_milliseconds
