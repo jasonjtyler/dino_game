@@ -56,7 +56,7 @@ class Cactus(Sprite):
 	def __init__(self, screen):
 		super(Cactus, self).__init__()
 		self.screen = screen
-		self.image = pygame.image.load('cactus1.png')
+		self.image = pygame.image.load('assets/cactus1.png')
 		self.rect = self.image.get_rect()
 		
 		self.rect.bottom = 300
@@ -82,39 +82,66 @@ class Dino(Sprite):
 	def __init__(self, screen):
 		super(Dino, self).__init__()
 		self.screen = screen
-		self.image = pygame.image.load('thing.png')
+		self.image = pygame.image.load('assets/dino_stand.png')
+		self.walk1 = pygame.image.load('assets/dino_walk1.png')
+		self.walk2 = pygame.image.load('assets/dino_walk2.png')
+		self.walk_cycle = self.image
 		self.rect = self.image.get_rect()
 		
 		self.rect.bottom = 300
 		self.rect.left = 30
 		self.bottom = 300
 
-		self.jump_duration_milliseconds = 1000
-		self.jump_duration_half_milliseconds = 500
+		self.jump_duration_milliseconds = 500
+		self.jump_duration_half_milliseconds = 250
 		self.jump_height = 100
 		self.jump_curr_duration = 0
+
+		self.walk_cycle_duration_milliseconds = 200
+		self.walk_cycle_curr_duration = 0
 		
 	def blitme(self):
-		self.screen.blit(self.image, self.rect)
+		if self.is_jumping():
+			#Use walk1 as the jump sprite.
+			self.screen.blit(self.walk1, self.rect)
+		else:
+			#Walk cycle.
+			self.screen.blit(self.walk_cycle, self.rect)
 
 	def update(self, delta):
-		animation_value = 0
-		if self.jump_curr_duration > 0:
-			self.jump_curr_duration -= delta
-			if self.jump_curr_duration < 0:
-				self.jump_curr_duration = 0
 
-		if self.jump_curr_duration > self.jump_duration_half_milliseconds:
-			#Rising
-			normalized_duration = self.jump_curr_duration - self.jump_duration_half_milliseconds
-			duration_percent = 1 - (normalized_duration / self.jump_duration_half_milliseconds)
-			animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
-		elif self.jump_curr_duration > 0:
-			#Falling
-			duration_percent = (self.jump_curr_duration / self.jump_duration_half_milliseconds)
-			animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
+		if self.is_jumping():
+			#Update the jump location
+			animation_value = 0
+			if self.jump_curr_duration > 0:
+				self.jump_curr_duration -= delta
+				if self.jump_curr_duration < 0:
+					self.jump_curr_duration = 0
 
-		self.rect.bottom = self.bottom - animation_value
+			if self.jump_curr_duration > self.jump_duration_half_milliseconds:
+				#Rising
+				normalized_duration = self.jump_curr_duration - self.jump_duration_half_milliseconds
+				duration_percent = 1 - (normalized_duration / self.jump_duration_half_milliseconds)
+				animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
+			elif self.jump_curr_duration > 0:
+				#Falling
+				duration_percent = (self.jump_curr_duration / self.jump_duration_half_milliseconds)
+				animation_value = (int)(self.__cubicEaseOut(duration_percent) * self.jump_height)
+
+			self.rect.bottom = self.bottom - animation_value
+
+		else:
+			#No jump
+			self.rect.bottom = self.bottom
+
+			#Pick the correct walk cycle sprite
+			self.walk_cycle_curr_duration += delta
+			if self.walk_cycle_curr_duration > self.walk_cycle_duration_milliseconds:
+				self.walk_cycle_curr_duration -= self.walk_cycle_duration_milliseconds
+			if self.walk_cycle_curr_duration < 100:
+				self.walk_cycle = self.walk1
+			else:
+				self.walk_cycle = self.walk2
 	
 	def __cubicEaseOut(self, animation_delta):
 		#Use the cubic ease out equation to produce an animation value.
